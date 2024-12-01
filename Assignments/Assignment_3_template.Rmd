@@ -1,0 +1,185 @@
+---
+title: "Assignment 3"
+author: "qvns53"
+date: "2024-11-19"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+
+We are using a $k$-nearest neighbours model to predict the response variable $y$ based on the predictor variables $x_1$ and $x_2$. We want to assign a value to the point with $x_1 = 1$ and $x_2 = 2$. Here are the nearest neighbours from the training set:
+
+| $x_1$ | $x_2$ | $y$ |
+|-------|-------|-----|
+| 1     | 1     | 0.65  |
+| 2     | 2     | 0.53  |
+| 2     | 1     | 0.42 |
+| 3     | 2     | 0.31 |
+| 0     | 3     | 0.75 |
+
+### 1(a)
+
+What is the predicted value of $y$ for the new point using the $k$-nearest neighbours model with $k = 3$ using the Euclidean distance?
+
+```{r}
+# Create a data frame with the training data
+training_data <- data.frame("x_1" = c(1, 2, 2, 3, 0),
+                            "x_2" = c(1, 2, 1, 2, 3),
+                            "y" = c(0.65, 0.53, 0.42, 0.31, 0.75))
+
+# Create a data frame with the new point
+new_point <- data.frame("x_1" = 1,
+                        "x_2" = 2)
+
+# Calculate the Euclidean distance
+training_data$distance <- sqrt((new_point$x_1 - training_data$x_1)^2 + (new_point$x_2 - training_data$x_2)^2)
+
+```
+Here I have used the 'tidyverse' package (seen in MATH2687) to predict y, however the 'caret' package would also work.
+```{r}
+library(tidyverse)
+
+# Estimate y for the new_point
+k_nearest <- training_data |> 
+  arrange(desc(distance)) |> 
+  slice(1:3)
+
+prediction <- mean(k_nearest$y)
+print(paste0("The predicted value for x_1 = 1, x_2 = 2, is ", round(prediction, 2)))
+```
+
+### 1(b)
+
+What is the predicted value of $y$ for the new point using the $k$-nearest neighbours model with $k = 3$ using the Manhattan distance?
+
+```{r}
+# Calculate the Manhattan distance
+training_data$manhattan_distance <- abs(new_point$x_1 - training_data$x_1) + abs(new_point$x_2 - training_data$x_2) 
+
+# Estimate y for the new_point
+k_nearest_manhattan <- training_data |> 
+  arrange(desc(manhattan_distance)) |> 
+  slice(1:3)
+
+prediction_manhattan <- mean(k_nearest_manhattan$y)
+print(paste0("The predicted value for x_1 = 1, x_2 = 2, is ", round(prediction_manhattan, 2)))
+```
+
+### 1(c)
+
+Find the predicted value of $y$ for the new point using the weighted variant of the $k$-nearest neighbours model with $k = 3$, Manhattan distance and the inverse distance weighting.
+
+```{r}
+# Calculate the inverse distance weighting
+training_data$weight <- 1/training_data$manhattan_distance
+
+# Estimate y for the new_point
+k_nearest_manhattan_weighted <- training_data |> 
+  arrange(desc(weight)) |> 
+  slice(1:3)
+
+prediction_manhattan_weighted <- sum(k_nearest_manhattan_weighted$y * k_nearest_manhattan_weighted$weight)/sum(k_nearest_manhattan_weighted$weight)
+print(paste0("The predicted value for x_1 = 1, x_2 = 2, is ", round(prediction_manhattan_weighted, 2)))
+```
+
+## Question 2
+
+In this question, we will utilise the `wine` dataset in R. The dataset contains information about 1,599 Portuguese red wines.
+
+```{r}
+wine <- read.csv("https://www.maths.dur.ac.uk/users/john.p.gosling/MATH3431_presentations/winequality-red.csv")
+```
+
+### 2(a)
+
+The variable `quality` is listed as a numeric variable. Convert this variable to a binary factor with levels "bad" and "good". A wine is considered "good" if the quality is greater than or equal to 7.
+
+```{r}
+# Add a new column to the data frame
+wine$quality_binary <- ifelse(wine$quality >= 7, "good", "bad")
+
+# Convert the new column to a factor
+wine$quality_binary <- as.factor(wine$quality_binary)
+```
+
+### 2(b)
+
+Perform a 60/40 split of the dataset into a training set and a test set.
+
+```{r}
+# Set the seed for reproducibility
+set.seed(124)
+
+# Split the dataset
+train_indices <- sample(1:nrow(wine), 0.6*nrow(wine))
+wine_train <- wine[train_indices, ]
+wine_test <-  wine[-train_indices, ]
+
+str(wine_train)
+str(wine_test)
+```
+
+### 2(c)
+
+Using `rpart`, fit a decision tree model to the training set to predict the binary quality of the wine based on the 11 explanatory variables. What is the accuracy of the model on the test set? Provide a visualisation of the decision tree.
+
+```{r}
+library(rpart)
+
+# Fit the decision tree model
+wine_tree <- rpart(quality_binary ~ . -quality,
+                   data = wine_train,
+                   method = "class")
+
+# Make predictions on the test set
+predictions <- predict(wine_tree, wine_test, type="class")
+# Calculate the accuracy
+accuracy <- mean(predictions == wine_test$quality_binary)
+print(accuracy)
+```
+
+```{r}
+# Plot the decision tree
+library(rpart.plot)
+rpart.plot(wine_tree)
+```
+
+### 2(d)
+
+Fit a $k$-nearest neighbours model to the training set using the `caret` and `class` packages. Use 15-fold cross-validation to determine the optimal value of $k$ from the range 2 to 10. What is the optimal value of $k$ and the associated accuracy of the model on the test set? Would you prefer to use the decision tree or the $k$-nearest neighbours model for this dataset?
+
+```{r}
+library(class)
+library(caret)
+
+# Fit the knn model using 15-fold cross validation whilst optimising k
+knn_fit <- train(quality_binary ~ . - quality,
+                 data = wine_train,
+                 method = "knn",
+                 tuneGrid = expand.grid(k = 2:10),
+                 trControl = trainControl(method = "cv",
+                                          number = 15))
+
+# Display the knn_fit object
+knn_fit
+```
+
+```{r}
+# Predictions for the test set
+test_pred <- predict(knn_fit, newdata = wine_test)
+
+# Calculate the accuracy
+accuracy_knn <- mean(test_pred == wine_test$quality_binary)
+accuracy_knn
+```
+
+To compare the models, we can look at accuracy and complexity. The decision tree (DT) model has a rounded accuracy of 0.84375 and the kNN model achieved 0.846875. These are very similar accuracies, but it does suggest the kNN model to be marginally better. 
+
+However, on the side of computational complexity, the DT model would be preferrable as it requires less resources to make predictions than the kNN model. The DT model is also more interpretable.

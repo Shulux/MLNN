@@ -1,0 +1,276 @@
+---
+title: "practical 1 md"
+author: "qvns53"
+date: "2024-10-24"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# My main section
+
+Here's some maths:
+$$
+\log(x^3) \neq \frac{\exp(3x)}{x}
+$$
+
+
+### Align subsection
+
+Adding maths in an "align" environment makes it easier to line things up.
+\begin{align*}
+\mu &\sim \text{N}(0,1),\\
+X_i|\mu &\sim \text{N}(\mu,1), ~~~i=1,\dots,n. 
+\end{align*}
+
+# R section
+
+Here's some very simple R code.
+
+```{r}
+x <- rnorm(100)
+y <- runif(100) + x
+```
+
+```{r}
+plot(x, y)
+```
+
+
+## Task 1
+
+```{r}
+# Load in the data
+Glass <- read.csv("https://www.maths.dur.ac.uk/users/john.p.gosling/MATH3431_practicals/Glass.csv")
+
+# Look at the first few rows
+head(Glass)
+
+# Look at a pairs plot
+pairs(Glass)
+```
+
+
+```{r}
+# Fit a linear model
+lm1 <- lm(RI ~ . - Type,
+          data = Glass)
+
+# Summarise the model
+summary(lm1)
+
+# Make predictions
+preds <- predict(lm1)
+
+# Plot the predictions against the actual values
+plot(preds, Glass$RI)
+```
+
+
+```{r}
+# Calculate the MSE
+mse <- mean((preds - Glass$RI)^2)
+mse
+
+# Calculate the MAE
+mae <- mean(abs(preds - Glass$RI))
+mae
+```
+
+
+```{r}
+# Fit a linear model
+lm2 <- lm(RI ~ Na + Mg + K + Ca + Ba,
+          data = Glass)
+
+# Summarise the model
+summary(lm2)
+
+# Make predictions
+preds2 <- predict(lm2)
+
+plot(preds2, Glass$RI)
+
+
+# Calculate the MSE
+mse2 <- mean((preds2 - Glass$RI)^2)
+mse2
+
+# Calculate the MAE
+mae2 <- mean(abs(preds2 - Glass$RI))
+mae2
+```
+
+```{r}
+# Fit a linear model
+lm3 <- lm(RI ~ Si + Al + Fe,
+          data = Glass)
+          
+# Summarise the model
+summary(lm3)
+
+# Make predictions
+preds3 <- predict(lm3)
+
+plot(preds3, Glass$RI)
+
+# Calculate the MSE
+mse3 <- mean((preds3 - Glass$RI)^2)
+mse3
+
+# Calculate the MAE
+mae3 <- mean(abs(preds3 - Glass$RI))
+mae3
+
+```
+
+## Task 2
+
+```{r}
+# Fit a linear model without interactions
+lm4 <- lm(RI ~ Na + Ba,
+          data = Glass)
+# Summarise the model
+summary(lm4)
+
+
+# Fit a model with the interaction
+lm5 <- lm(RI ~ Na*Ba,
+          data = Glass)
+
+# Summarise the model
+summary(lm5)
+```
+
+```{r}
+# Create a proxy for the interaction term
+Glass$Na_Ba <- Glass$Na * Glass$Ba
+
+# Look at the relationships between the variables
+pairs(Glass[, c("RI", "Na", "Ba", "Na_Ba")])
+```
+
+
+## Task 3
+
+```{r}
+# Load in the data
+LetterRecognition <- read.csv("https://www.maths.dur.ac.uk/users/john.p.gosling/MATH3431_practicals/LetterRecognition.csv")
+
+# Look at the first few rows
+head(LetterRecognition)
+
+# Look at the structure of the data
+str(LetterRecognition)
+
+# Look at the levels of the letter variable
+levels(LetterRecognition$lettr)
+
+# Create a subset of the data
+ltrs <- subset(LetterRecognition,
+               lettr %in% c("I", "A", "W"))
+
+# Reset the levels of the letter variable
+ltrs$lettr <- factor(ltrs$lettr)
+str(ltrs)
+```
+
+```{r}
+# A jittered scatter plot of the width vs the height with the letters coloured
+plot(ltrs$width+rnorm(nrow(ltrs), 0, 0.1),
+     ltrs$high+rnorm(nrow(ltrs), 0, 0.1),
+     col = as.numeric(ltrs$lettr),
+     pch = 19, cex = 0.2,
+     xlab = "Width", ylab = "Height")
+
+# Add a legend
+legend("bottomright", legend = levels(ltrs$lettr), col = 1:3, pch = 19)
+```
+Linear Discriminant Analysis (LDA)
+
+```{r}
+# Load the MASS package
+library(MASS)
+
+# Fit the LDA model
+lda1 <- lda(lettr ~ .,
+            data = ltrs)
+
+# Summarise the model
+summary(lda1)
+
+# Make predictions
+preds <- predict(lda1)
+
+# Calculate the confusion matrix using the table function
+table(ltrs$lettr, preds$class)
+```
+
+looks pretty good, the diagonals have most of the observations, so they are classified correctly.
+
+
+```{r}
+# Fit the LDA model
+lda2 <- lda(lettr ~ x.box + y.box + width + high,
+            data = ltrs)
+
+# Summarise the model
+summary(lda2)
+
+# Make predictions
+preds2 <- predict(lda2)
+
+# Calculate the confusion matrix
+conf <- table(ltrs$lettr, preds2$class)
+conf
+
+# Calculate the overall accuracy 
+# (hint consider the elements of the confusion matrix)
+acc <- sum(diag(conf))/sum(conf)*100
+acc
+
+# Calculate the precision for `A`
+prec_a <- conf[1,1]/(sum(conf[, 1]))*100
+prec_a
+
+# Calculate the recall for `A`
+recall_a <- conf[1,1]/(sum(conf[1,]))*100
+recall_a
+```
+
+## Task 4
+
+```{r}
+# Fit the LDA model
+lda3 <- lda(lettr ~ I(width^0.5) + high,
+            data = ltrs)
+
+# Summarise the model
+summary(lda3)
+
+# Make predictions
+preds3 <- predict(lda3)
+
+# Calculate the confusion matrix
+conf3 <- table(ltrs$lettr, preds3$class)
+conf3
+
+# Calculate the overall accuracy 
+# (hint consider the elements of the confusion matrix)
+acc3 <- sum(diag(conf3))/sum(conf3)*100
+acc3
+
+# Calculate the precision for `A`
+prec_a3 <- conf3[1,1]/(sum(conf3[, 1]))*100
+prec_a3
+
+# Calculate the recall for `A`
+recall_a3 <- conf3[1,1]/(sum(conf3[1,]))*100
+recall_a3
+
+```

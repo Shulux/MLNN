@@ -1,0 +1,5 @@
+"0","# Load the data"
+"0","weather_full <- read.csv(""https://www.maths.dur.ac.uk/users/john.p.gosling/MATH3431_practicals/weather_classification_data.csv"")"
+"0",""
+"0","# Display the first few rows"
+"0","head(weather_full)"

@@ -1,0 +1,156 @@
+---
+title: "Assignment 2"
+author: "????"
+date: "2024-11-??"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+
+### 1(a)
+
+Consider a simple linear regression model with Gaussian errors. We simulate data from the model
+$$
+Y = X\boldsymbol{\beta} + \epsilon,
+$$
+where $\epsilon \sim \text{Normal}(0, \sigma^2)$, using the following code:
+
+```{r}
+set.seed(123)
+n <- 100
+fake_data <- data.frame(X1 = runif(n, 0, 1),
+                        X2 = runif(n, 0, 1),
+                        X3 = runif(n, 0, 1),
+                        X4 = runif(n, 0, 1),
+                        X5 = runif(n, 0, 1),
+                        X6 = runif(n, 0, 1),
+                        X7 = runif(n, 0, 1),
+                        X8 = runif(n, 0, 1),
+                        X9 = runif(n, 0, 1),
+                        X10 = runif(n, 0, 1))
+fake_data$Y <- fake_data$X1 + 2*fake_data$X2 + fake_data$X3 +
+  2*fake_data$X4 + fake_data$X5 + 2*fake_data$X6 +
+  fake_data$X7 + 2*fake_data$X8 + fake_data$X9 +
+  2*fake_data$X10 + rnorm(n, 0, 1)
+```
+
+Fit 11 models using these data and the `lm` function in R. The first model should include only the intercept, the second model should include the intercept and the first predictor, the third model should include the intercept and the first two predictors, and so on.
+
+```{r}
+models <- list()
+for (i in 1:11) {
+  models[[i]] <- ????
+}
+```
+
+### 1(b)
+
+Create a plot with the adjusted $R^2$ on the $x$-axis and the AIC on the $y$-axis. Label each point with the number of variables used. What do you observe?
+
+*(Hint: if our model is called `lm1`, we can extract the adjusted $R^2$ using `summary(lm1)$adj.r.squared` and the AIC using `AIC(lm1)`)*
+
+```{r}
+# Use sapply to extract the adjusted R^2 and AIC values
+adj_r_squared <- sapply(????)
+AIC_values <- sapply(????)
+
+# Create the plot
+????
+
+# Add labels to the points
+text(????)
+```
+
+There is a clear negative relationship between the adjusted $R^2$ and the AIC. This is expected as the AIC is a measure of model fit that penalises the number of parameters in the model. We also see that the AIC is minimised when the adjusted $R^2$ is maximised when we use all 10 predictors.
+
+### 1(c)
+
+We posit the following model for the relationship between the response variable $Y$ and the predictor variable $X$:
+
+$$
+Y = \beta_0 + \beta_1 X + \epsilon
+$$
+
+where $\epsilon \sim \text{Lapace}(0, \sigma)$. The likelihood function for the model is given by:
+
+$$
+l(\hat{y}, \hat\sigma; x) = \frac{1}{2\hat\sigma} \exp\left( -\frac{|y - \hat{y}|}{\hat\sigma} \right),
+$$
+where $\hat{y} = \hat\beta_0 + \hat\beta_1 x$. Let's say that we have $n$ observations, then the maximum likelihood estimate for $\sigma$ is given by:
+
+$$
+\hat{\sigma} = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|.
+$$
+
+Write out an expression for the AIC in terms of the mean absolute error.
+
+$$
+\begin{aligned}
+\text{AIC} &= 2k - 2\log(l(\hat{y}, \hat{\sigma}; x)),\\
+&= ????,\\
+&= ????,\\
+&...
+\end{aligned}
+$$
+
+## Question 2
+
+In this question, we will utilise the `mtcars` dataset in R. The dataset contains information about 32 cars from the 1974 model year.
+
+```{r}
+mtcars
+```
+
+### 2(a)
+
+Five of the variables are more factors than numeric variables. Identify these variables, and convert them to factors.
+
+```{r}
+????
+```
+
+### 2(b)
+
+We are going to try to predict the number of cylinders (`cyl`) based on the remaining variables. Split the dataset into a training set and a test set. The training set should contain 70% of the data and the test set should contain the remaining 30%.
+
+```{r}
+train_indices <- ????
+train_set <- ????
+test_set <- ????
+```
+
+### 2(c)
+
+Fit a $k$-nearest neighbours model to the training set using 3-fold cross validation to determine $k$. What is the optimal value of $k$ and the associate accuracy of the model (for both the training and test set)?
+
+```{r message=FALSE, warning=FALSE}
+library(class)
+library(caret)
+
+# Fit the knn model using LOO cross validation whilst optimising k
+knn_fit <- train(???)
+
+# Extract the optimal value of k
+optimal_k <- knn_fit$bestTune$k
+plot(knn_fit)
+```
+
+```{r}
+# Accuracy of the training set
+train_pred <- predict(????)
+
+# Calculate the accuracy
+????
+```
+
+```{r}
+# Accuracy of the test set
+test_pred <- predict(????)
+
+# Calculate the accuracy
+????
+```

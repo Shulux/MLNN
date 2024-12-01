@@ -1,0 +1,5 @@
+"0","# Load the data"
+"0","mushroom <- read.csv(""https://www.maths.dur.ac.uk/users/john.p.gosling/MATH3431_practicals/mushrooms.csv"")"
+"0",""
+"0","# Display the first few rows"
+"0","head(mushroom)"

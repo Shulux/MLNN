@@ -1,0 +1,281 @@
+---
+title: "practical 2"
+author: "qvns53"
+date: "2024-11-07"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Generate synthetic data
+data <- data.frame(
+  x1 = rnorm(100),
+  x2 = rnorm(100),
+  x3 = rnorm(100))
+data$y = data$x1 + 0.5*data$x2^2 + 
+  (data$x3-0.1*data$x2)^3 + rnorm(100,0,0.1)
+
+# Pairs plot
+pairs(data)
+```
+
+```{r}
+# Split the data
+train_indices <- sample(1:nrow(data), 0.8*nrow(data))
+data_train <- data[train_indices, ]
+data_test <- data[-train_indices, ]
+
+# Pairs plot colouring by training/test
+pairs(data,
+      col = ifelse(1:nrow(data) %in% train_indices,
+                   "blue", "red"))
+
+```
+
+
+## Task 2
+
+```{r}
+# Fit a polynomial model
+model <- lm(y ~ poly(x1, 2) + poly(x2, 2) + poly(x3, 2),
+            data = data_train)
+
+# Predict on the test data
+predictions <- predict(model, newdata = data_test)
+
+# Calculate MSE
+mse <- mean((data_test$y - predictions)^2)
+mse
+
+# Calculate adjusted R-squared
+# (Hint it has been calculated in the model summary)
+adj_r2 <- summary(model)$adj.r.squared
+adj_r2
+  
+# Plot actual vs predictions
+plot(data_test$y, predictions,
+     xlab = "Actual",
+     ylab = "Predicted",
+     xlim = c(min(data_test$y, predictions),
+              max(data_test$y, predictions)),
+     ylim = c(min(data_test$y, predictions),
+              max(data_test$y, predictions)))
+
+abline(a = 0, b = 1, col = "red")
+```
+
+## Task 3
+
+```{r}
+# Load the caret package
+library(caret)
+
+# Set up the cross-validation
+control <- trainControl(method = "cv",
+                        number = 5)
+
+# Fit the model using cross-validation
+model_cv <- train(y ~ poly(x1, 2) + poly(x2, 2) + poly(x3, 2),
+                  data = data,
+                  method = "lm",
+                  trControl = control)
+
+# List the elements
+names(model_cv)
+
+```
+
+
+
+```{r}
+# Extract the results
+results <- model_cv$results
+results
+
+# Hence, calculate the MSE
+mse <- results$RMSE^2
+mse
+
+# Make predictions on the "test" data
+predictions_cv <- predict(model_cv,
+                          newdata = data_test)
+# Plot actual vs predictions
+plot(data_test$y, predictions_cv,
+     xlab = "Actual",
+     ylab = "Predicted",
+     xlim = c(min(data_test$y, predictions_cv),
+              max(data_test$y, predictions_cv)),
+     ylim = c(min(data_test$y, predictions_cv),
+              max(data_test$y, predictions_cv)))
+abline(a = 0, b = 1, col = "red")
+
+# Overlay points from initial model
+points(data_test$y, predictions, col = "lightblue")
+
+```
+
+
+## Task 4 - repeat with leave-one-out cross-validation
+
+
+```{r}
+# Set up the cross-validation
+control <- trainControl(method = "LOOCV")
+
+# Fit the model using leave-one-out cross-validation
+model_loocv <- train(y ~ poly(x1, 2) + poly(x2, 2) + poly(x3, 2),
+                     data = data,
+                     method = "lm",
+                     trControl = control)
+
+# Extract the results
+model_loocv$results
+
+# Calculate the MSE
+mse <- model_loocv$results$RMSE^2
+mse
+
+# Make predictions on the "test" data
+predictions_loocv <- predict(model_loocv, data_test)
+
+
+# Plot actual vs predictions
+plot(data_test$y, predictions_loocv,
+     xlab = "Actual",
+     ylab = "Predicted",
+     xlim = c(min(data_test$y, predictions_loocv),
+              max(data_test$y, predictions_loocv)),
+     ylim = c(min(data_test$y, predictions_loocv),
+              max(data_test$y, predictions_loocv)))
+
+abline(0, 1, col="red")
+
+
+# Overlay points from initial model
+points(data_test$y, predictions, col="lightblue")
+
+
+# Overlay points from 5-fold cross-validation
+points(data_test$y, predictions_cv, col="lightgreen")
+
+
+```
+
+# Classification
+
+## Task 5 - kNN
+```{r}
+# Load the data
+weather_full <- read.csv("https://www.maths.dur.ac.uk/users/john.p.gosling/MATH3431_practicals/weather_classification_data.csv")
+
+# Display the first few rows
+head(weather_full)
+str(weather_full)
+summary(weather_full)
+
+# Select the features of interest
+weather <- weather_full[ , c(8,1,3,4,6)]
+
+# Convert the season to a factor
+weather$Season <- as.factor(weather$Season)
+
+# Summarise the data
+summary(weather)
+str(weather)
+head(weather)
+
+set.seed(123)
+
+# Split the data
+train_indices <- sample(1:nrow(weather), 0.8*nrow(weather))
+weather_train <- weather[train_indices, ]
+weather_test <- weather[-train_indices, ]
+  
+# Fit a k-nearest neighbours model
+model_knn <- train(Season ~ .,
+                   data = weather_train,
+                   method = "knn",
+                   trControl = trainControl(method = "cv",
+                                            number = 10))
+
+# Extract the results
+model_knn$results
+
+# Make predictions on the test data
+predictions_knn_weather <- predict(model_knn, weather_test)
+
+# Calculate the confusion matrix
+confusionMatrix(predictions_knn_weather, 
+                weather_test$Season)
+```
+
+## Task 6 - naive Bayes
+```{r}
+# Fit a naive Bayes model
+model_nb <- train(Season ~ .,
+                  data = weather_train,
+                  method = "naive_bayes",
+                  trControl = trainControl(method = "cv",
+                                        number = 10))
+
+# Extract the results
+model_nb$results
+
+# Make predictions on the test data
+predictions_nb <- predict(model_nb, weather_test)
+
+# Calculate the confusion matrix
+confusionMatrix(predictions_nb, 
+                weather_test$Season)
+
+# Pairs plot coloured by season
+pairs(weather[sample(1:nrow(weather),1000),2:5],
+      col = weather_train$Season)
+
+# Also consider the names of the full set of variables
+names(weather_full)
+```
+
+## Task 7 - Decision Trees
+```{r}
+# Load the data
+mushroom <- read.csv("https://www.maths.dur.ac.uk/users/john.p.gosling/MATH3431_practicals/mushrooms.csv")
+
+# Display the first few rows
+head(mushroom)
+
+# Convert all variables to factors and put back into the data frame
+mushroom <- lapply(mushroom, as.factor)
+mushroom <- as.data.frame(mushroom)
+
+# Remove all but the first four predictors
+# to aid interpretation of the tree
+mushroom <- mushroom[,1:5]
+
+# Summarise the data
+summary(mushroom)
+str(mushroom)
+head(mushroom)
+  
+# Load the `rpart` package
+library(rpart)
+
+# Fit a decision tree using 5-fold cross-validation
+model_tree <- train(class ~ .,
+                    data = mushroom,
+                    method = "rpart",
+                    trControl = trainControl(method = "cv",
+                                             number = 5))
+
+# Load the `rpart.plot` package
+library(rpart.plot)
+
+# Plot the tree
+rpart.plot(model_tree$finalModel)
+
+```

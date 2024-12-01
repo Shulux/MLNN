@@ -1,0 +1,3 @@
+"0","# Plot the decision tree"
+"0","library(rpart.plot)"
+"0","rpart.plot(wine_tree)"

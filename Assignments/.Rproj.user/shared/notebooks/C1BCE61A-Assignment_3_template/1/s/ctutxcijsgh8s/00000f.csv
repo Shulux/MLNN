@@ -1,0 +1,4 @@
+"0","# Predictions for the test set"
+"0","test_pred <- predict(knn_fit, newdata = wine_test)"
+"2","Error: object 'knn_fit' not found
+"

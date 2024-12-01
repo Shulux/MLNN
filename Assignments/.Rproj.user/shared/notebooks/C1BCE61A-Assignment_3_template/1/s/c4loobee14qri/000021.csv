@@ -1,0 +1,5 @@
+"0","# Add a new column to the data frame"
+"0","wine$quality_binary <- ifelse(wine$quality >= 7, ""good"", ""bad"")"
+"0",""
+"0","# Convert the new column to a factor"
+"0","wine$quality_binary <- as.factor(wine$quality_binary)"
